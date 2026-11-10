@@ -1,326 +1,243 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Latency Lab – Page Load Simulator</title>
-<style>
-:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f4f7;--pn:#fff;--ink:#0f172a;--mut:#64748b;--ln:#e3e6ec;--acc:#4338ca;--sk1:#e6e9f0;--sk2:#f5f6fa;--dns:#8b5cf6;--tcp:#f59e0b;--tls:#ec4899;--wait:#38bdf8;--dl:#22c55e;--good:#15803d;--warn:#b45309;--bad:#b91c1c;color-scheme:light}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0e16;--pn:#121926;--ink:#e6eaf2;--mut:#8b98ad;--ln:#223047;--acc:#a5b4fc;--sk1:#1b2539;--sk2:#2a3850;--good:#4ade80;--warn:#fbbf24;--bad:#f87171;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0a0e16;--pn:#121926;--ink:#e6eaf2;--mut:#8b98ad;--ln:#223047;--acc:#a5b4fc;--sk1:#1b2539;--sk2:#2a3850;--good:#4ade80;--warn:#fbbf24;--bad:#f87171;color-scheme:dark}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
-.wrap{max-width:1320px;margin:0 auto;padding:20px 16px 40px}
-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
-h1{font:700 28px/1.15 Georgia,"Times New Roman",serif;margin:0 0 4px;letter-spacing:-.01em}
-header p{margin:0;color:var(--mut);max-width:60ch}
-h2{font:600 16px/1.3 Georgia,serif;margin:0 0 12px}
-h3{font-size:13px;font-weight:600;color:var(--mut);margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--ln)}
-.btn,select,input[type=number]{font:inherit;color:var(--ink);background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:6px 12px;cursor:pointer}
-.btn:hover{border-color:var(--acc)}.btn.p{background:var(--acc);color:var(--bg);border-color:var(--acc)}
-:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-.app{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
-@media(min-width:980px){.app{grid-template-columns:340px minmax(0,1fr);align-items:start}.ctl{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 24px);overflow:auto}}
-.pn{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:16px;margin-bottom:16px}
-.ctl{margin:0}.res{min-width:0}
-.c{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-bottom:10px;align-items:center}
-.c label{font-size:13px}.c input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--acc);margin:2px 0}
-.nv{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--mut)}.nv input{width:78px;padding:3px 6px;text-align:right}
-.c select{grid-column:1/-1;width:100%}
-.chk{display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.chips button{font-size:12px;padding:3px 9px;border-radius:99px}
-.mets{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-bottom:16px}
-.m{background:var(--pn);border:1px solid var(--ln);border-left:4px solid var(--ln);border-radius:10px;padding:10px 12px}
-.m span{display:block;font-size:12px;color:var(--mut)}.m b{font:600 22px/1.2 Georgia,serif}.m i{display:block;font-size:11px;font-style:normal;color:var(--mut);min-height:16px}
-.m.good{border-left-color:var(--good)}.m.warn{border-left-color:var(--warn)}.m.bad{border-left-color:var(--bad)}
-.m.good b{color:var(--good)}.m.warn b{color:var(--warn)}.m.bad b{color:var(--bad)}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}.bar input[type=range]{flex:1;min-width:140px;accent-color:var(--acc)}
-.bar .tm{font-variant-numeric:tabular-nums;min-width:74px;text-align:right;font-size:13px}
-.fr{border:1px solid var(--ln);border-radius:10px;overflow:hidden;background:#fff;color:#111}
-.fb{display:flex;gap:6px;align-items:center;padding:8px 12px;background:var(--sk1);position:relative;color:var(--ink)}
-.fb u{width:10px;height:10px;border-radius:50%;background:var(--mut);opacity:.5}
-.url{flex:1;margin-left:8px;background:var(--pn);border-radius:6px;padding:2px 10px;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.prog{position:absolute;left:0;bottom:0;height:3px;background:var(--acc);width:0}
-.vp{height:340px;overflow:hidden;position:relative;background:#fff}
-.pg{padding:14px;opacity:0}.pg.on{opacity:1}
-.el:not(.ld){background:linear-gradient(90deg,var(--sk1),var(--sk2),var(--sk1));background-size:200% 100%;animation:sh 1.2s linear infinite;border-radius:8px}
-.el:not(.ld) .ct{visibility:hidden}
-@keyframes sh{to{background-position:-200% 0}}
-@media(prefers-reduced-motion:reduce){.el:not(.ld){animation:none}}
-.nav{display:flex;gap:16px;padding:10px 12px;margin-bottom:12px;font-size:13px;border-bottom:1px solid #e5e7eb}.nav .ct{display:flex;gap:16px;width:100%}.nav b{margin-right:auto}
-.hero{height:110px;margin-bottom:12px}.hero.ld{background:linear-gradient(120deg,#4338ca,#db2777);color:#fff}.hero .ct{padding:22px}.hero h4{margin:0 0 4px;font:700 22px Georgia,serif}.hero p{margin:0;opacity:.85}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.card{height:78px}.card.ld{background:#eef2ff}.card .ct{padding:10px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:#334155}.card span{font-size:24px}
-.lt{font-size:12px;color:#64748b;margin:4px 0 6px}
-.list{display:grid;gap:6px}.row2{height:34px}.row2.ld{background:#f8fafc;border:1px solid #e5e7eb}.row2 .ct{display:flex;gap:12px;padding:7px 12px;font-size:13px}.row2 b{margin-right:auto}.row2 em{color:#15803d;font-style:normal}
-.st{padding:8px 12px;font-size:13px;color:var(--mut);border-top:1px solid var(--ln);background:var(--pn)}
-.wfx{position:relative;--lw:170px;overflow-x:auto}.wfi{min-width:640px;position:relative}
-.row{display:grid;grid-template-columns:var(--lw) 1fr;align-items:center;height:26px;border-bottom:1px solid var(--ln)}
-.lb{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px}.lb em{font-style:normal;color:var(--mut);margin-right:4px}.lb small{color:var(--mut);margin-left:6px}
-.tr{position:relative;height:100%}.s{position:absolute;top:7px;height:12px;border-radius:2px;min-width:2px}
-.dns{background:var(--dns)}.tcp,.quic{background:var(--tcp)}.tls{background:var(--tls)}.wait{background:var(--wait)}.dl{background:var(--dl)}
-.ax .tr i{position:absolute;top:4px;font-size:11px;font-style:normal;color:var(--mut);transform:translateX(-50%)}
-.mk{position:absolute;left:var(--lw);right:0;top:0;bottom:0;pointer-events:none}
-.mk i{position:absolute;top:0;bottom:0;border-left:1px dashed var(--mut)}.mk i b{position:absolute;top:0;left:3px;font-size:10px;font-weight:600;background:var(--pn);padding:0 3px;color:var(--ink)}
-#ph{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);left:var(--lw);pointer-events:none}
-.lg{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--mut)}.lg span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c)}
-.rw{display:grid;grid-template-columns:150px 1fr 130px;gap:10px;align-items:center;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:13px}.rw:hover{background:var(--bg)}.rw:first-child{background:var(--bg);cursor:default;font-weight:600}
-.rw small{display:block;color:var(--mut);font-weight:400}.bars i{display:block;height:8px;border-radius:4px;margin:2px 0;min-width:3px}.b1{background:var(--acc)}.b2{background:var(--dl)}.rw b{font-size:12px;font-weight:500;text-align:right}
-@media(max-width:560px){.rw{grid-template-columns:100px 1fr}.rw b{grid-column:1/-1;text-align:left}}
-ul{margin:0;padding-left:18px}li{margin:4px 0}li b{color:var(--good)}
-code{display:block;background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;overflow-x:auto;white-space:pre;margin-top:8px}
-.note{font-size:12px;color:var(--mut)}
-.ur{display:flex;gap:8px;flex-wrap:wrap}.ur input{flex:1;min-width:220px;font:inherit;padding:8px 12px;border:1px solid var(--ln);border-radius:8px;background:var(--pn);color:var(--ink)}
-.stl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}.dot{width:10px;height:10px;border-radius:50%;background:var(--mut);display:inline-block}.dot.ok{background:var(--good)}.dot.bad{background:var(--bad)}.dot.run{background:var(--warn);animation:bl 1s steps(1) infinite}
-.samp{display:flex;gap:4px;align-items:flex-end;height:56px;margin:4px 0 12px}.samp i{flex:1;background:var(--wait);border-radius:3px 3px 0 0}.samp i.x{background:var(--bad)}
-.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}table.kv{width:100%;border-collapse:collapse;font-size:13px}.kv td{padding:4px 6px;border-bottom:1px solid var(--ln);vertical-align:top;word-break:break-word}.kv td:first-child{color:var(--mut);white-space:nowrap}
-.ta{width:100%;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--ln);border-radius:8px;padding:8px;margin:6px 0}details summary{cursor:pointer;font-weight:600;margin:10px 0}
-.ov{position:absolute;inset:0;background:#fff;color:#64748b;display:flex;align-items:center;justify-content:center;font-size:14px}
-.tbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px;font-size:13px}.tg{font-weight:600}.tg.good{color:var(--good)}.tg.warn{color:var(--warn)}.tg.bad{color:var(--bad)}
-.term{position:relative;background:#0b1020;color:#d1d5db;border-radius:10px;padding:12px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;height:250px;overflow:auto;cursor:text}.term:focus-within{outline:2px solid var(--acc)}
-.term div{white-space:pre-wrap;word-break:break-all}.pr{color:#4ade80}.tt{color:#fbbf24}.dm{color:#7b8794}.tl{white-space:pre-wrap;word-break:break-all}
-.cur{display:inline-block;width:8px;height:15px;background:#d1d5db;vertical-align:text-bottom;animation:bl 1s steps(1) infinite}@keyframes bl{50%{opacity:0}}
-#tkey{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0}
-.ftc{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}.ftc label{display:grid;gap:4px;font-size:13px}.ftc .nv input{width:90px}.ftc input[type=number]{width:100%}
-.pbar{flex:1;min-width:120px;height:10px;background:var(--sk1);border-radius:6px;overflow:hidden}.pbar i{display:block;height:100%;width:0;background:var(--dl)}
-#fch{width:100%;height:150px;margin-top:12px;background:var(--bg);border-radius:8px}#fch .ar{fill:var(--acc);opacity:.18}#fch .ln{fill:none;stroke:var(--acc);stroke-width:2;vector-effect:non-scaling-stroke}#fch .cu{stroke:var(--bad);stroke-width:2;vector-effect:non-scaling-stroke}
-.ax2{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--mut);margin:4px 0 8px}
-.cr{display:grid;grid-template-columns:160px 1fr 80px;gap:10px;align-items:center;padding:5px 8px;border-radius:8px;cursor:pointer;font-size:13px}.cr:hover,.cr.on{background:var(--bg)}.cr.on{font-weight:600}.cr i{display:block;height:8px;border-radius:4px;background:var(--dl);min-width:3px}.cr b{font-size:12px;font-weight:500;text-align:right}
-@media(max-width:560px){.cr{grid-template-columns:110px 1fr 70px}}
-</style></head><body><div class="wrap">
-<header><div><h1>Latency Lab</h1><p>Pick a server location’s latency, tune the network and your page, then watch how the site and its API data actually load.</p></div><button class="btn" id="theme">Toggle theme</button></header>
-<div class="app">
-<aside class="pn ctl" id="ctl"><h2>Controls</h2></aside>
-<section class="res">
-<div class="pn" id="site"><h2>Test your own website</h2>
-<div class="ur"><input id="url" type="url" placeholder="https://your-site.com" aria-label="Website URL" autocomplete="off"><button class="btn p" id="probe">Run live test</button></div>
-<div class="stl"><span class="dot" id="dot"></span><b id="stt">Idle</b><span class="note" id="stm">Paste a link and run the test, or use the curl method for full data.</span></div>
-<div class="mets" id="smets"></div><div class="samp" id="ssamp"></div>
-<details><summary>Full data with curl (works for any site)</summary>
-<p class="note">Browsers hide most details of other sites. Run this in a terminal (macOS, Linux, WSL or Git Bash) and paste the full output below.</p>
-<textarea class="ta" id="ccmd" readonly rows="5" aria-label="curl command"></textarea><button class="btn" id="ccopy">Copy command</button>
-<textarea class="ta" id="cpaste" rows="6" placeholder="Paste the curl output here" aria-label="curl output"></textarea><button class="btn p" id="canal">Analyze output</button></details>
-<div class="g2"><div><h3>Connection details</h3><table class="kv" id="sdet"></table></div><div><h3>Response headers</h3><table class="kv" id="shdr"></table></div></div>
-<h3>Findings</h3><ul id="sfind"></ul>
-<h3>Projected time to first byte by server location</h3><div id="sproj"></div>
-<div class="bar"><button class="btn" id="ssim">Use these numbers in the simulator</button><button class="btn" id="sprev">Preview site with my latency</button></div><div id="sfrm"></div>
-<p class="note">The live test measures real response times from your browser to your site and nothing is sent anywhere else. It cannot run if this page is opened from a host that blocks calls to other sites, or if you open an https page and test an http:// link. Opened locally or from GitHub Pages it works. The curl method works everywhere.</p></div>
-<div class="mets" id="mets"></div>
-<div class="pn"><h2>Live preview</h2>
-<div class="fr"><div class="fb"><u></u><u></u><u></u><span class="url">https://your-server.example</span><div class="prog" id="prog"></div></div><div class="vp"><div class="pg" id="pg"></div></div></div>
-<div class="st" id="stat">Ready</div>
-<div class="bar"><button class="btn p" id="play">Replay</button><select id="spd" aria-label="Playback speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1× real time</option><option value="2">2×</option><option value="5">5×</option></select><input type="range" id="sc" min="0" max="1000" value="0" aria-label="Timeline"><span class="tm" id="tm">0 ms</span><button class="btn" id="pin">Pin as baseline</button></div></div>
-<div class="pn"><h2>Request waterfall</h2><div class="wfx"><div class="wfi" id="wf"></div></div>
-<div class="lg"><span style="--c:var(--dns)">DNS</span><span style="--c:var(--tcp)">TCP / QUIC connect</span><span style="--c:var(--tls)">TLS</span><span style="--c:var(--wait)">Waiting (network + server)</span><span style="--c:var(--dl)">Download</span></div></div>
-<div class="pn"><h2>Terminal over SSH: typing lag and command time</h2>
-<div class="tbar"><select id="tmode" aria-label="Terminal type"><option value="ssh">SSH (every key goes to the server first)</option><option value="mosh">Mosh (keys appear instantly)</option></select><span id="tinfo"></span></div>
-<div class="term" id="term" tabindex="-1"><div id="tout"></div><div class="tl"><span class="pr">deploy@vps:~$ </span><span id="tin"></span><i class="cur"></i></div><input id="tkey" aria-label="Terminal input" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-<div class="chips" id="tchips" style="margin-top:10px"></div>
-<p class="note" style="margin:0">Click the terminal and type, or press a command button. Characters appear only after the round trip, and each command reports how long its output took. <span id="tlag"></span></p></div>
-<div class="pn"><h2>Downloading and uploading files</h2>
-<div class="ftc"><label>File size<span class="nv"><input type="number" id="fsz" value="100" min="1"><select id="fun"><option value="1048576">MB</option><option value="1073741824">GB</option></select></span></label>
-<label>Direction<select id="fdir"><option value="down">Download from server</option><option value="up">Upload to server</option></select></label>
-<label>Method<select id="fmeth"><option value="https">HTTPS download or upload (1 stream)</option><option value="h3">HTTP/3 (QUIC)</option><option value="sftp">SFTP or SCP (1 SSH stream)</option><option value="par">Parallel streams (rsync, aria2, split upload)</option></select></label>
-<label>Parallel streams<input type="number" id="fn" value="4" min="1" max="32"></label></div>
-<div class="mets" id="fmets"></div>
-<div class="bar"><button class="btn p" id="fgo">Start transfer</button><div class="pbar"><i id="fpb"></i></div><span class="tm" id="ftm" style="min-width:240px"></span></div>
-<svg id="fch" viewBox="0 0 600 150" preserveAspectRatio="none" role="img" aria-label="Transfer speed over time"></svg>
-<div class="ax2"><span>Speed over time: connection setup, ramp-up, then steady speed</span><span id="fmax"></span></div>
-<p class="note" id="fnote"></p><div id="fcmp"></div></div>
-<div class="pn"><h2>Compare server locations with your settings</h2><div id="cmp"></div><p class="note">Blue bar: largest paint. Green bar: fully loaded. Click a row to use that latency. Region latencies are rough typical values and depend on your visitors’ ISPs.</p></div>
-<div class="pn"><h2>What would help most</h2><ul id="tips"></ul></div>
-<div class="pn"><h2>Measure a real server</h2><p class="note" style="margin:0">Most VPS providers offer a test IP or looking-glass page. Ping it, then run this against a trial server and copy the numbers into the sliders.</p><code>ping -c 10 YOUR_SERVER_IP
-curl -o /dev/null -s -w "dns:%{time_namelookup} connect:%{time_connect} tls:%{time_appconnect} ttfb:%{time_starttransfer} total:%{time_total}\n" https://YOUR_SITE</code></div>
-</section></div>
-<p class="note">Educational model: DNS, TCP and TLS 1.3 each cost one round trip (TLS 1.2 costs two; HTTP/3 combines transport and crypto into one). Transfers include TCP slow start and a loss penalty. Real results vary, so use this to compare options rather than as an exact prediction.</p>
-</div>
-<script>
-const $=s=>document.querySelector(s),el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
-const P={rtt:160,jitter:15,loss:.5,bw:50,up:20,dns:30,server:120,db:80,html:60,assets:600,imgs:8,imgKB:1500,apis:4,apiKB:20,cpu:4,proto:'h2',tls:'1.3',mode:'seq',cached:false};
-const REG=[['Local',5],['Same country',25],['Singapore / Mumbai',90],['Germany / EU',170],['US East',240],['US West',290],['Australia',320]];
-const C=[['rtt','Latency (round trip)',1,1000,1,'ms'],['jitter','Jitter',0,200,1,'ms'],['loss','Packet loss',0,15,.1,'%'],['bw','Download bandwidth',1,1000,1,'Mbps'],['up','Upload bandwidth',1,1000,1,'Mbps'],['dns','DNS lookup',0,400,5,'ms'],
-['server','Server think time',0,2000,10,'ms'],['db','Database time per API call',0,1500,10,'ms'],
-['html','HTML size',5,500,5,'KB'],['assets','CSS + JS size',0,5000,50,'KB'],['imgs','Images',0,40,1,''],['imgKB','Images total',0,20000,100,'KB'],['apis','API calls',0,12,1,''],['apiKB','Response size per call',1,1000,1,'KB'],['cpu','Device CPU slowdown',1,8,1,'×']];
-const GR={rtt:'Network',server:'Server',html:'Page and API payload',cpu:'Device'};
-const SET={};let ready=false;
-const ctl=$('#ctl');
-function sel(k,l,o){const d=el('div','c');d.innerHTML=`<label>${l}</label><select>${o.map(([v,t])=>`<option value="${v}"${P[k]==v?' selected':''}>${t}</option>`).join('')}</select>`;d.querySelector('select').id='s-'+k;d.querySelector('select').onchange=e=>{P[k]=e.target.value;go()};ctl.append(d)}
-C.forEach(([k,l,mn,mx,st,u])=>{
- if(GR[k])ctl.append(el('h3','',GR[k]));
- const d=el('div','c');d.innerHTML=`<label for="r-${k}">${l}</label><span class="nv"><input type="number" aria-label="${l}" min="${mn}" max="${mx}" step="${st}"><b>${u}</b></span><input type="range" id="r-${k}" min="${mn}" max="${mx}" step="${st}">`;
- ctl.append(d);const r=d.querySelector('[type=range]'),n=d.querySelector('[type=number]');
- SET[k]=v=>{v=Math.min(mx,Math.max(mn,+v||mn));P[k]=v;r.value=n.value=v;go()};
- r.oninput=()=>SET[k](r.value);n.onchange=()=>SET[k](n.value);r.value=n.value=P[k];
- if(k==='rtt'){const ch=el('div','chips');REG.forEach(([n2,v])=>{const b=el('button','btn',`${n2} ${v}ms`);b.onclick=()=>SET.rtt(v);ch.append(b)});ctl.append(ch)}
- if(k==='dns'){sel('proto','HTTP version',[['h1','HTTP/1.1 (6 connections)'],['h2','HTTP/2'],['h3','HTTP/3 (QUIC)']]);sel('tls','TLS',[['1.3','TLS 1.3'],['1.2','TLS 1.2'],['none','No TLS (HTTP)']])}
- if(k==='apiKB'){sel('mode','API call pattern',[['seq','Sequential (one after another)'],['par','Parallel (all at once)']]);const c=el('label','chk','<input type="checkbox"> Repeat visit (static files cached)');c.querySelector('input').onchange=e=>{P.cached=e.target.checked;go()};ctl.append(c)}
-});
-// seeded random so a run is repeatable
-const rng=s=>()=>(s=(s*1664525+1013904223)>>>0)/4294967296;
-function sim(p,rtt){
- const rn=rng(7),R=()=>Math.max(1,rtt+(rn()*2-1)*p.jitter),h1=p.proto==='h1',h3=p.proto==='h3',tn=p.tls==='none'?0:p.tls==='1.2'?2:1,out=[],pipe=[0,0],conns=[];
- const xfer=(b,fresh)=>{if(!b)return 0;const tx=b*8/(p.bw*1e3),rd=Math.ceil(Math.log2(b/14600+1)),ss=Math.max(0,rd-1)*rtt*(fresh?1:.4)*(h3?.8:1),pk=Math.ceil(b/1460),ls=Math.min(p.loss/100*pk*R()*(h3?.5:1.2),rtt*20+200);return tx+ss+ls};
- const mk=(st,first)=>{const s=[];let x=st;if(first&&p.dns){s.push(['dns',x,x+p.dns]);x+=p.dns}const a=R();s.push([h3?'quic':'tcp',x,x+a]);x+=a;if(!h3&&tn){const b=tn*R();s.push(['tls',x,x+b]);x+=b}return{free:x,ready:x,segs:s}};
- conns.push(mk(0,true));let firstReq=true;
- const req=(name,type,bytes,rdy,srv,cache,pi=0)=>{
-  if(cache){const o={name,type,bytes:0,cached:true,segs:[['wait',rdy,rdy+2]],end:rdy+2};out.push(o);return o}
-  let c,segs=[];
-  if(firstReq){c=conns[0];segs=c.segs.slice();firstReq=false}
-  else if(h1){c=conns.filter(k=>k.free<=rdy).sort((a,b)=>a.free-b.free)[0];if(!c){if(conns.length<6){c=mk(rdy,false);conns.push(c);segs=c.segs.slice()}else c=conns.slice().sort((a,b)=>a.free-b.free)[0]}}
-  else c=conns[0];
-  const st=Math.max(rdy,c.ready,h1?c.free:0),hdr=st+R()+srv,rs=Math.max(hdr,pipe[pi]),fresh=!c.used;c.used=true;
-  const end=rs+xfer(bytes,fresh);pipe[pi]=end;c.free=end;
-  const o={name,type,bytes,hdr,segs:[...segs,['wait',st,rs],['dl',rs,end]],end};out.push(o);return o};
- const doc=req('index.html','doc',p.html*1024,0,p.server,false);
- const ca=p.cached,css=req('app.css','css',p.assets*256,doc.end,5,ca),js=req('app.js','js',p.assets*768,doc.end,5,ca);
- const fcp=Math.max(doc.end,css.end)+25*p.cpu,jsDone=js.end+p.assets*.3*p.cpu,imgs=[],n=p.imgs;
- for(let i=0;i<n;i++){const sz=p.imgKB*1024*(n===1?1:i?.7/(n-1):.3);imgs.push(req(i?`img-${i}.jpg`:'hero.jpg','img',sz,doc.end+10,5,ca))}
- let prev=jsDone;const apis=[];
- for(let i=0;i<p.apis;i++){const a=req(`GET /api/items?page=${i+1}`,'api',p.apiKB*1024,p.mode==='seq'?prev:jsDone,p.server+p.db,false,1);a.render=a.end+12*p.cpu;prev=a.render;apis.push(a)}
- const heroEnd=imgs.length?imgs[0].end:fcp,dataReady=apis.length?apis[apis.length-1].render:fcp,lcp=Math.max(fcp,heroEnd,apis.length?apis[0].render:0),full=Math.max(dataReady,...out.map(o=>o.end),fcp);
- const hs=doc.segs.filter(s=>s[0]!=='wait'&&s[0]!=='dl').reduce((a,s)=>a+s[2]-s[1],0);
- return{out,imgs,apis,fcp,heroEnd,m:{ttfb:doc.hdr,fcp,lcp,dataReady,full,bytes:out.reduce((a,o)=>a+o.bytes,0),reqs:out.length,hs}}}
-const f=ms=>ms>=1000?(ms/1000).toFixed(2)+' s':Math.round(ms)+' ms',kb=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.round(b/1024)+' KB';
-let S,pin=null,t=0,playing=false,last=0,tmr;
-function go(){if(!ready)return;clearTimeout(tmr);tmr=setTimeout(run,120)}
-function run(){S=sim(P,P.rtt);metrics();wf();pv();cmp();tips();termInfo();renderFT();t=0;$('#sc').max=Math.round(S.m.full+300);playing=true;last=performance.now();$('#play').textContent='Pause';draw()}
-function metrics(){const m=S.m,M=[['Time to first byte','ttfb',800,1800],['First paint','fcp',1800,3000],['Largest paint','lcp',2500,4000],['API data ready','dataReady',2500,4000],['Fully loaded','full',4000,8000]];
- $('#mets').innerHTML=M.map(([l,k,g,w])=>{const v=m[k],d=pin?v-pin[k]:null;return`<div class="m ${v<=g?'good':v<=w?'warn':'bad'}"><span>${l}</span><b>${f(v)}</b><i>${d==null?'':(d>=0?'+':'−')+f(Math.abs(d))+' vs pinned'}</i></div>`}).join('')+`<div class="m"><span>Transferred</span><b>${kb(m.bytes)}</b><i>${m.reqs} requests · ${f(m.hs)} handshake</i></div>`}
-function wf(){const T=S.tot=S.m.full*1.04+1,box=$('#wf');box.innerHTML='';
- const stp=[50,100,200,250,500,1000,2000,2500,5000,10000].find(s=>T/s<=9)||20000;let tk='';for(let x=0;x<=T;x+=stp)tk+=`<i style="left:${x/T*100}%">${f(x)}</i>`;
- box.append(el('div','row ax','<span class="lb"></span><div class="tr">'+tk+'</div>'));
- S.out.forEach(o=>{const sg=o.segs.map(([k,a,b])=>`<i class="s ${k}" style="left:${a/T*100}%;width:${(b-a)/T*100}%" title="${k}: ${f(b-a)}"></i>`).join('');
-  box.append(el('div','row',`<span class="lb" title="${o.name}"><em>${o.type}</em>${o.name}<small>${o.cached?'cached':kb(o.bytes)}</small></span><div class="tr">${sg}</div>`))});
- const m=S.m,mk=el('div','mk');[['TTFB',m.ttfb],['FCP',m.fcp],['LCP',m.lcp],['Load',m.full]].forEach(([l,v],i)=>mk.innerHTML+=`<i style="left:${v/T*100}%"><b style="top:${i*12}px">${l}</b></i>`);
- const phd=el('div');phd.id='ph';box.append(mk,phd)}
-function pv(){const pg=$('#pg');pg.innerHTML='';S.els=[];
- const add=(par,c,h,b)=>{const e=el('div','el '+c,`<div class="ct">${h}</div>`);par.append(e);S.els.push({e,b})};
- add(pg,'nav','<b>◆ Corner Kitchen</b><span>Menu</span><span>Orders</span><span>Account</span>',S.fcp);
- add(pg,'hero','<h4>Fresh food, delivered fast</h4><p>Order in under a minute</p>',S.heroEnd);
- const g=el('div','cards');pg.append(g);for(let i=1;i<=Math.min(Math.max(S.imgs.length-1,0),6);i++)add(g,'card',`<span>🍽️</span>Dish ${i}`,S.imgs[i].end);
- if(S.apis.length){pg.append(el('div','lt',`Live orders · ${S.apis.length} API call${S.apis.length>1?'s':''} (${P.mode==='seq'?'sequential':'parallel'})`));const L=el('div','list');pg.append(L);S.apis.slice(0,8).forEach((a,i)=>add(L,'row2',`<b>Order #${1040+i}</b><span>$${(12+i*7.5).toFixed(2)}</span><em>Delivered</em>`,a.render))}}
-function cmp(){const rows=[['Your setting',P.rtt],...REG].map(([n,r])=>[n,r,sim(P,r).m]),mx=Math.max(...rows.map(x=>x[2].full));
- $('#cmp').innerHTML=rows.map(([n,r,m])=>`<div class="rw" data-r="${r}"><span>${n}<small>${r} ms</small></span><div class="bars"><i class="b1" style="width:${m.lcp/mx*100}%"></i><i class="b2" style="width:${m.full/mx*100}%"></i></div><b>${f(m.lcp)} / ${f(m.full)}</b></div>`).join('');
- $('#cmp').querySelectorAll('.rw').forEach((r,i)=>{if(i)r.onclick=()=>SET.rtt(+r.dataset.r)})}
-function tips(){const V=[['Use HTTP/3',(p,r)=>[{...p,proto:'h3'},r]],['Fetch API calls in parallel',(p,r)=>[{...p,mode:'par'},r]],['Cache static files (repeat visitors)',(p,r)=>[{...p,cached:true},r]],['Cut server and database time in half',(p,r)=>[{...p,server:p.server/2,db:p.db/2},r]],['Choose a location 100 ms closer to visitors',(p,r)=>[p,Math.max(1,r-100)]],['Remove packet loss',(p,r)=>[{...p,loss:0},r]],['Use TLS 1.3',(p,r)=>[{...p,tls:p.tls==='1.2'?'1.3':p.tls},r]]];
- const base=S.m.full,L=V.map(([l,fn])=>{const[p2,r2]=fn({...P},P.rtt);return[l,base-sim(p2,r2).m.full]}).filter(x=>x[1]>50).sort((a,b)=>b[1]-a[1]).slice(0,4);
- $('#tips').innerHTML=L.length?L.map(([l,d])=>`<li><b>−${f(d)}</b> ${l}</li>`).join(''):'<li>Nothing stands out. This setup is already close to its best.</li>'}
-const NM={dns:'Resolving DNS…',tcp:'Opening TCP connection…',quic:'QUIC handshake…',tls:'TLS handshake…',wait:'Waiting for the server…',dl:'Downloading the HTML…'};
-function draw(){if(!S)return;const T=S.tot,ph=$('#ph');if(ph)ph.style.left=`calc(var(--lw) + (100% - var(--lw)) * ${Math.min(t/T,1)})`;
- $('#pg').classList.toggle('on',t>=S.fcp);S.els.forEach(x=>x.e.classList.toggle('ld',t>=x.b));
- const s=S.out[0].segs.find(s=>t>=s[1]&&t<s[2]);$('#stat').textContent=s?NM[s[0]]:t<S.fcp?'Fetching CSS and JavaScript…':t<S.m.full?'Loading images and API data…':'Fully loaded';
- $('#prog').style.width=Math.min(100,S.out.filter(o=>o.end<=t).length/S.out.length*100)+'%';$('#tm').textContent=f(t);$('#sc').value=t}
-function tick(ts){if(playing&&S){t+=(ts-last)*$('#spd').value;if(t>=S.m.full+300){t=S.m.full+300;playing=false;$('#play').textContent='Replay'}draw()}last=ts;requestAnimationFrame(tick)}
-$('#play').onclick=()=>{if(!S)return;if(playing){playing=false;$('#play').textContent='Resume'}else{if(t>=S.m.full+300)t=0;playing=true;$('#play').textContent='Pause'}};
-$('#sc').oninput=e=>{playing=false;$('#play').textContent='Resume';t=+e.target.value;draw()};
-$('#pin').onclick=()=>{pin={...S.m};metrics()};
-let dk=matchMedia('(prefers-color-scheme: dark)').matches;$('#theme').onclick=()=>{dk=!dk;document.documentElement.dataset.theme=dk?'dark':'light'};
-/* ---- SSH terminal ---- */
-const CMD=[['ls -la',4,1,'drwxr-xr-x  app  logs  backups  deploy.sh'],['ps aux',25,8,'root 1 0.0 0.1 /sbin/init\nwww-data 842 1.2 2.4 node server.js'],['docker ps',60,2,'CONTAINER ID  IMAGE        STATUS\n3f2a9c1d      api:latest   Up 3 days'],['git pull',900,3,'Already up to date.'],['cat /var/log/syslog',40,400,'Oct 31 21:04:11 vps systemd[1]: Started Session 42 of user deploy.'],['apt update',3500,12,'Hit:1 http://deb.debian.org stable InRelease\nReading package lists... Done']];
-const PR='deploy@vps:~$ ',T={mode:'ssh',last:0},tout=$('#tout'),tin=$('#tin'),tkey=$('#tkey'),esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])),jit=()=>(Math.random()*2-1)*P.jitter;
-const lag=()=>Math.max(1,P.rtt+jit())+(Math.random()<P.loss/100?P.rtt*1.5+200:0);
-function addL(h,c){tout.append(el('div',c||'',h));while(tout.children.length>60)tout.firstChild.remove();$('#term').scrollTop=1e9}
-function echo(fn){const d=T.mode==='mosh'?0:lag(),now=performance.now(),at=Math.max(now+d,T.last+1);T.last=at;setTimeout(()=>{fn();$('#tlag').textContent='Last key echoed after '+Math.round(d)+' ms.'},at-now);return d}
-function submit(cmd){if(!cmd){echo(()=>{addL('<span class="pr">'+PR+'</span>');tin.textContent=''});return}
- const c=CMD.find(x=>x[0]===cmd)||[cmd,15,.2,'bash: '+esc(cmd)+': command not found'],out=c[2]*1024,dl=out*8/(P.bw*1e3)+P.loss/100*Math.ceil(out/1460)*P.rtt*.6,total=Math.max(1,P.rtt+jit())+c[1]+dl;
- echo(()=>{addL('<span class="pr">'+PR+'</span>'+esc(cmd));tin.textContent=''});
- setTimeout(()=>{addL(c[3].replace(/\n/g,'\n')+(c[2]>=50?'\n… '+kb(out)+' of output':''));addL('⏱ '+f(total)+' until the output finished (network '+f(total-c[1])+', server '+f(c[1])+')','tt')},total)}
-tkey.oninput=()=>{const v=tkey.value;echo(()=>tin.textContent=v)};
-tkey.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const v=tkey.value.trim();tkey.value='';submit(v)}};
-$('#term').onclick=()=>tkey.focus();$('#tmode').onchange=e=>{T.mode=e.target.value;termInfo()};
-CMD.forEach(c=>{const b=el('button','btn',c[0]);b.style.fontSize='12px';b.onclick=()=>{tkey.focus();submit(c[0])};$('#tchips').append(b)});
-function termInfo(){const l=T.mode==='mosh'?8:P.rtt+P.jitter/2+P.loss/100*(P.rtt*1.5+200),k=l<100?['good','smooth']:l<200?['warn','noticeable']:l<350?['bad','laggy']:['bad','painful'],login=P.dns+7*P.rtt+150;
- $('#tinfo').innerHTML=`Typing lag ≈ <span class="tg ${k[0]}">${f(l)} (${k[1]})</span> · SSH login ≈ <b>${f(login)}</b> before the prompt`}
-addL('Connected. Type a command or press a button below.','dm');
-/* ---- file transfer ---- */
-const F={size:100,unit:1048576,dir:'down',method:'https',n:4},FT={t:0,play:false,r:null,last:0};
-function ftCalc(method,n){const bytes=F.size*F.unit,rtt=Math.max(1,P.rtt),link=F.dir==='up'?P.up:P.bw,tn=P.tls==='none'?0:P.tls==='1.2'?2:1,[win,sr,ns,lf]={https:[4,1+tn,1,1],h3:[4,1,1,.25],sftp:[2,7,1,1],par:[4,1+tn,n,1]}[method];
- const wc=win*8.389/(rtt/1000),ls=P.loss>0?1.22*1460*8/(rtt/1000*Math.sqrt(P.loss/100*lf))/1e6:1e9,r1=Math.min(wc,ls),rate=Math.min(link,ns*r1)*.94,setup=P.dns+sr*rtt+rtt+10,r0=ns*14600*8/(rtt/1000)/1e6;
- const dt=Math.max(5,(setup+bytes*8/(rate*1e6)*1e3+rtt*12)/400);let t=setup,done=0,i=0;const pts=[[0,0],[setup,0]],cum=[[0,0],[setup,0]];
- while(done<bytes&&i++<6000){const r=Math.min(rate,r0*Math.pow(2,(t-setup)/rtt)),st=Math.min(dt,(bytes-done)*8/(r*1e6)*1e3+.001);done+=r*1e6/8*st/1000;t+=st;pts.push([t,r]);cum.push([t,done])}
- const avg=bytes*8/(t/1000)/1e6;return{total:t,setup,rate,link,pts,cum,avg,bytes,eff:avg/link,cap:ns*r1,bn:ns*r1<link?(wc<=ls?'TCP window ÷ latency':'Packet loss'):'Your bandwidth'}}
-function renderFT(){const r=ftCalc(F.method,F.n);FT.r=r;
- $('#fmets').innerHTML=[['Total time',f(r.total),''],['Average speed',r.avg.toFixed(1)+' Mbps',(r.avg/8).toFixed(1)+' MB/s'],['Link used',Math.round(r.eff*100)+'%',F.dir==='up'?'upload link '+P.up+' Mbps':'download link '+P.bw+' Mbps',r.eff>.7?'good':r.eff>.35?'warn':'bad'],['Wait before data',f(r.setup),'DNS, handshakes, first byte'],['Bottleneck',r.bn,'']].map(([l,v,s,c])=>`<div class="m ${c||''}"><span>${l}</span><b style="${l==='Bottleneck'?'font-size:15px':''}">${v}</b><i>${s}</i></div>`).join('');
- const yM=Math.max(r.rate,1)*1.15,X=t=>t/r.total*600,Y=v=>148-v/yM*140,pl=r.pts.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ');
- $('#fch').innerHTML=`<polygon class="ar" points="0,148 ${pl} 600,148"/><polyline class="ln" points="${pl}"/><line class="cu" id="fcu" x1="0" x2="0" y1="0" y2="150"/>`;
- $('#fmax').textContent='peak '+r.rate.toFixed(0)+' Mbps · total '+f(r.total);
- $('#fnote').textContent=r.bn==='Your bandwidth'?'Your link is the limit here, so extra streams or a closer server will not speed this up.':`Latency or loss caps what one connection can carry at about ${r.cap.toFixed(0)} Mbps, while the link allows ${r.link} Mbps. Parallel streams, HTTP/3 or a closer server raise that cap.`;
- const FM=[['HTTPS, 1 stream','https',1],['HTTP/3 (QUIC)','h3',1],['SFTP or SCP','sftp',1],['4 parallel streams','par',4],['8 parallel streams','par',8],['16 parallel streams','par',16]],rs=FM.map(([n,m,k])=>[n,m,k,ftCalc(m,k).total]),mx=Math.max(...rs.map(x=>x[3]));
- $('#fcmp').innerHTML=rs.map(([n,m,k,tt])=>`<div class="cr${m===F.method&&(m!=='par'||k===F.n)?' on':''}" data-m="${m}" data-k="${k}"><span>${n}</span><div><i style="width:${tt/mx*100}%"></i></div><b>${f(tt)}</b></div>`).join('');
- $('#fcmp').querySelectorAll('.cr').forEach(e=>e.onclick=()=>{F.method=e.dataset.m;if(F.method==='par')F.n=+e.dataset.k;$('#fmeth').value=F.method;$('#fn').value=F.n;renderFT()});
- FT.t=0;FT.play=true;ftDraw()}
-function ftDraw(){const r=FT.r;if(!r)return;let i=r.cum.findIndex(c=>c[0]>=FT.t);if(i<0)i=r.cum.length-1;const d=r.cum[i][1],sp=r.pts[i][1],sc=Math.max(1,r.total/8000);
- $('#fpb').style.width=Math.min(100,d/r.bytes*100)+'%';const cu=$('#fcu');if(cu){cu.setAttribute('x1',FT.t/r.total*600);cu.setAttribute('x2',FT.t/r.total*600)}
- $('#ftm').textContent=`${Math.round(Math.min(100,d/r.bytes*100))}% · ${f(FT.t)} of ${f(r.total)} · ${sp.toFixed(0)} Mbps`+(sc>1?` · shown ${Math.round(sc)}× faster`:'')}
-function ftTick(ts){const dl=ts-(FT.last||ts);FT.last=ts;if(FT.play&&FT.r){FT.t+=dl*Math.max(1,FT.r.total/8000);if(FT.t>=FT.r.total){FT.t=FT.r.total;FT.play=false}ftDraw()}requestAnimationFrame(ftTick)}
-[['fsz','input',()=>F.size=Math.max(1,+$('#fsz').value||1)],['fun','change',()=>F.unit=+$('#fun').value],['fdir','change',()=>F.dir=$('#fdir').value],['fmeth','change',()=>F.method=$('#fmeth').value],['fn','input',()=>F.n=Math.min(32,Math.max(1,+$('#fn').value||1))]].forEach(([id,ev,fn])=>$('#'+id).addEventListener(ev,()=>{fn();renderFT()}));
-$('#fgo').onclick=()=>{FT.t=0;FT.play=true};
-/* ---- test your own site ---- */
-const W={m:{},h:{},s:[],st:null},nu=v=>{v=v.trim();return v&&!/^https?:[/][/]/i.test(v)?'https://'+v:v},sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function stat(k,a,b){$('#dot').className='dot '+k;$('#stt').textContent=a;$('#stm').textContent=b||''}
-function samp(){const ok=W.s.filter(x=>x!=null),mx=Math.max(1,...ok);$('#ssamp').innerHTML=W.s.map(x=>x==null?'<i class="x" style="height:100%" title="failed"></i>':`<i style="height:${Math.max(4,x/mx*100)}%" title="${f(x)}"></i>`).join('')}
-function rt(u){const e=performance.getEntriesByName(u)[0];if(!e)return;const m=W.m;if(e.nextHopProtocol)m.http={h2:'2',h3:'3','http/1.1':'1.1'}[e.nextHopProtocol]||e.nextHopProtocol;
- if(e.requestStart>0){const s=e.secureConnectionStart>0;m.dns=e.domainLookupEnd-e.domainLookupStart;m.tcp=s?e.secureConnectionStart-e.connectStart:e.connectEnd-e.connectStart;m.tls=s?e.connectEnd-e.secureConnectionStart:0;m.wait=e.responseStart-e.requestStart;if(m.tcp>0)m.rtt=m.tcp}}
-async function probe(){
- const u=nu($('#url').value);let x;try{x=new URL(u)}catch{return stat('bad','Invalid URL','Enter something like https://example.com')}
- $('#url').value=u;cmdUpd();const N=8;W.s=[];W.h={};W.st=null;W.m={src:'live',url:u,host:x.host,scheme:x.protocol,path:x.pathname+x.search};render();
- stat('run','Probing…','8 requests from your browser');$('#probe').disabled=true;performance.clearResourceTimings();let fails=0;
- for(let i=0;i<N;i++){const c=new AbortController(),to=setTimeout(()=>c.abort(),8000),t0=performance.now();let v=null;
-  try{await fetch(u,{mode:'no-cors',cache:'no-store',signal:c.signal});v=performance.now()-t0}catch(e){fails++}
-  clearTimeout(to);W.s.push(v);samp();await sleep(150)}
- $('#probe').disabled=false;const ok=W.s.filter(v=>v!=null);
- if(!ok.length)return stat('bad','Unreachable or blocked','No answer. The site may be down, this page may not be allowed to call other sites, or an http:// link was opened from https. Use the curl method below.');
- rt(u);const m=W.m,w=W.s.slice(1).filter(v=>v!=null).sort((a,b)=>a-b),med=w.length?w[w.length>>1]:ok[0],avg=ok.reduce((a,b)=>a+b)/ok.length,sd=Math.sqrt(ok.reduce((a,b)=>a+(b-avg)**2,0)/ok.length);
- const cold=W.s[0]??ok[0];W.st={min:w[0]??ok[0],med,p95:w[Math.min(w.length-1,Math.ceil(w.length*.95)-1)]??med,sd,loss:fails/N*100};
- const hs=Math.max(0,cold-med);if(m.rtt==null)m.rtt=Math.min(W.st.min,hs/(m.scheme==='https:'?2:1));
- m.server=Math.max(0,med-m.rtt);m.ttfb=cold;m.hs=m.dns!=null?m.dns+m.tcp+m.tls:hs;
- try{const r=await fetch(u,{cache:'no-store'});m.status=r.status;r.headers.forEach((v,k)=>W.h[k]=v);m.bytes=(await r.arrayBuffer()).byteLength}catch{}
- stat('ok','Reachable',`${ok.length} of ${N} probes answered · ${m.host}`);render()}
-function parseCurl(x){x=x.split('\r').join('');const p=x.split(/-{3} timing -{3}/);if(p.length<2)return null;const t={};p[1].split('\n').forEach(l=>{const i=l.indexOf(':');if(i>0)t[l.slice(0,i).trim()]=l.slice(i+1).trim()});
- const bl=p[0].split('\n\n').filter(b=>/^HTTP[/]/i.test(b.trim())),last=(bl[bl.length-1]||'').trim().split('\n'),h={};last.slice(1).forEach(l=>{const i=l.indexOf(':');if(i>0)h[l.slice(0,i).trim().toLowerCase()]=l.slice(i+1).trim()});
- const ms=k=>parseFloat(t[k])*1000,dns=ms('dns'),cn=ms('connect'),ap=ms('tls'),tt=ms('ttfb'),tcp=cn-dns,tls=ap>0?ap-cn:0,wait=tt-Math.max(ap,cn);if(isNaN(tt))return null;
- return{h,m:{status:+t.status,http:t.http_version,ip:t.ip,bytes:+t.size,dns,tcp,tls,wait,ttfb:tt,total:ms('total'),rtt:tcp>0?tcp:undefined,server:Math.max(0,wait-(tcp>0?tcp:0)),hs:dns+tcp+tls}}}
-function analyze(){const r=parseCurl($('#cpaste').value);if(!r)return stat('bad','Could not read the output','Paste everything the command printed, including the --- timing --- block.');
- const u=nu($('#url').value);let x={host:'',protocol:'https:',pathname:''};try{x=new URL(u)}catch{}
- W.s=[];W.st=null;W.h=r.h;W.m={...r.m,src:'curl',url:u,host:x.host,scheme:x.protocol,path:x.pathname};samp();stat('ok','curl result loaded','HTTP '+r.m.status+(r.m.http?' · HTTP/'+r.m.http:''));render()}
-function cmdUpd(){$('#ccmd').value=`curl -sS -o /dev/null -D - -H 'Accept-Encoding: gzip, br' -w '\\n--- timing ---\\ndns:%{time_namelookup}\\nconnect:%{time_connect}\\ntls:%{time_appconnect}\\nttfb:%{time_starttransfer}\\ntotal:%{time_total}\\nsize:%{size_download}\\nhttp_version:%{http_version}\\nip:%{remote_ip}\\nstatus:%{http_code}\\n' '${nu($('#url').value)||'https://your-site.com'}'`}
-function render(){const m=W.m,h=W.h,st=W.st;
- if(m.ttfb==null){['smets','sdet','shdr','sfind','sproj'].forEach(i=>$('#'+i).innerHTML='');return}
- const tl=(l,v,s,c)=>`<div class="m ${c||''}"><span>${l}</span><b>${v}</b><i>${s||''}</i></div>`,rate=(v,g,p)=>v<=g?'good':v<=p?'warn':'bad',n=v=>v==null||isNaN(v)?'n/a':f(v);let t='';
- if(m.status)t+=tl('Status',m.status,m.http?'HTTP/'+m.http:'',m.status<400?'good':'bad');
- t+=tl('TTFB (cold)',n(m.ttfb),'first request',rate(m.ttfb,800,1800));
- if(st)t+=tl('Warm response',n(st.med),`min ${n(st.min)} · p95 ${n(st.p95)}`)+tl('Jitter',n(st.sd),'std deviation')+tl('Packet loss',st.loss.toFixed(0)+'%','failed probes',st.loss?'bad':'good');
- if(m.dns!=null&&!isNaN(m.dns))t+=tl('DNS',n(m.dns))+tl('TCP connect',n(m.tcp),'about 1 RTT')+tl('TLS',n(m.tls));
- t+=tl('Server time',n(m.server),'estimate: wait minus RTT')+tl('Handshake',n(m.hs),'DNS + TCP + TLS')+(m.bytes?tl('Document',kb(m.bytes),m.src==='curl'?'on the wire':'decoded'):'');
- $('#smets').innerHTML=t;
- const kv=(a,b)=>b==null||b===''?'':`<tr><td>${a}</td><td>${esc(String(b))}</td></tr>`;
- $('#sdet').innerHTML=kv('Host',m.host)+kv('Scheme',(m.scheme||'').replace(':',''))+kv('Path',m.path)+kv('Resolved IP',m.ip)+kv('Protocol',m.http?'HTTP/'+m.http:'')+kv('Status',m.status)+kv('Estimated RTT',m.rtt!=null?f(m.rtt):'')+kv('Source',m.src==='curl'?'curl (full data)':'Browser probe (limited by CORS)');
- const keys=['server','content-type','content-encoding','content-length','cache-control','etag','age','alt-svc','via','strict-transport-security','content-security-policy','x-frame-options','x-powered-by','x-cache','cf-ray','location'];
- $('#shdr').innerHTML=keys.filter(k=>h[k]).map(k=>kv(k,h[k].length>110?h[k].slice(0,110)+'…':h[k])).join('')||'<tr><td colspan="2">Hidden by the browser. Most sites do not allow cross-site header reads. Use the curl method for the full list.</td></tr>';
- const fd=[],add=(l,x)=>fd.push([l,x]),hv=Object.keys(h).length>0;
- add(rate(m.ttfb,800,1800),`Cold TTFB is ${f(m.ttfb)} from your location (good is under 800 ms).`);
- if(m.hs>0)add(m.hs>300?'warn':'good',`Connection setup costs about ${f(m.hs)} before the request. Keep-alive and HTTP/2 or 3 avoid paying it again.`);
- if(m.server>200)add(m.server>500?'bad':'warn',`Server or app time is about ${f(m.server)}. Check slow queries, cold starts and caching.`);
- if(m.http==='1.1')add('warn','HTTP/1.1 in use. HTTP/2 or HTTP/3 helps a lot on high latency.');
- if(hv&&!h['content-encoding']&&/html|json|text/.test(h['content-type']||''))add('warn','No compression on this response. Enable gzip or brotli.');
- if(hv&&!h['cache-control'])add('warn','No Cache-Control header on the document.');
- if(hv&&m.scheme==='https:'&&!h['strict-transport-security'])add('warn','No HSTS header.');
- if(/^3/.test(m.status))add('warn','This URL redirects'+(h.location?' to '+h.location:'')+'. Each redirect adds a full round trip. Test the final URL.');
- if(m.status>=400)add('bad','The server answered with an error status.');
- const cdn=h['cf-ray']?'Cloudflare':h['x-amz-cf-id']?'CloudFront':(h['x-served-by']||h['x-vercel-id'])?'Fastly or Vercel':'';if(cdn)add('good','CDN headers found ('+cdn+'). Visitors may reach a nearby edge instead of the origin.');
- if(st&&st.sd>15&&st.sd>st.med*.3)add('warn','Response times vary a lot (jitter '+f(st.sd)+').');
- if(st&&st.loss)add('bad',st.loss.toFixed(0)+'% of probes failed.');
- $('#sfind').innerHTML=fd.map(([l,x])=>`<li><span class="tg ${l}">●</span> ${esc(x)}</li>`).join('');
- const tn=m.scheme==='http:'?0:P.tls==='none'?0:P.tls==='1.2'?2:1,S=m.server||0,pr=[['Measured from you',m.rtt||0],...REG].map(([a,r])=>[a,r,P.dns+r*(2+tn)+S]),mx=Math.max(...pr.map(x=>x[2]));
- $('#sproj').innerHTML=pr.map(([a,r,v],i)=>`<div class="cr" data-r="${Math.round(r)}"><span>${a} <small>${Math.round(r)} ms</small></span><div><i style="width:${v/mx*100}%"></i></div><b>${f(v)}</b></div>`).join('');
- $('#sproj').querySelectorAll('.cr').forEach(e=>e.onclick=()=>SET.rtt(+e.dataset.r||1))}
-$('#probe').onclick=probe;$('#url').onkeydown=e=>{if(e.key==='Enter')probe()};$('#url').oninput=cmdUpd;$('#canal').onclick=analyze;
-$('#ccopy').onclick=()=>{const c=$('#ccmd');c.select();try{navigator.clipboard.writeText(c.value)}catch{document.execCommand('copy')}};
-$('#ssim').onclick=()=>{const m=W.m;if(m.server==null)return;SET.server(Math.round(m.server));if(m.bytes)SET.html(Math.min(500,Math.max(5,Math.round(m.bytes/1024))));if(m.dns>0)SET.dns(Math.round(m.dns));
- if(m.http)P.proto=m.http==='3'?'h3':m.http==='1.1'?'h1':'h2';P.tls=m.scheme==='http:'?'none':P.tls==='none'?'1.3':P.tls;$('#s-proto').value=P.proto;$('#s-tls').value=P.tls;go();$('#mets').scrollIntoView({behavior:'smooth'})};
-$('#sprev').onclick=()=>{const m=W.m;if(!m.url||!/^https?:/.test(m.url))return;const tn=m.scheme==='http:'?0:P.tls==='none'?0:P.tls==='1.2'?2:1,ph=[['Resolving DNS…',P.dns],['TCP connect…',P.rtt],['TLS handshake…',tn*P.rtt],['Waiting for server…',P.rtt+(m.server||0)]],tot=ph.reduce((a,b)=>a+b[1],0);
- $('#sfrm').innerHTML=`<div class="fr" style="margin-top:12px"><div class="fb"><u></u><u></u><u></u><span class="url">${esc(m.url)}</span></div><div class="vp"><iframe id="ifr" title="Site preview" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="width:100%;height:100%;border:0"></iframe><div class="ov" id="ov"></div></div></div><p class="note">The real site loads after the projected ${f(tot)} from your latency settings. Your own connection time is added on top. If the frame stays empty, the site or this host blocks embedding.</p>`;
- const t0=performance.now(),ifr=$('#ifr'),ov=$('#ov');let live=false;ifr.onload=()=>{if(live)ov.style.display='none'};
- (function s(){const e=performance.now()-t0;if(e>=tot){live=true;ifr.src=m.url;ov.textContent='Loading the real page…';return}let a=0,lb='';for(const[l,d]of ph){a+=d;if(e<a){lb=l;break}}ov.textContent=lb+' '+f(e);requestAnimationFrame(s)})()};
-cmdUpd();
-ready=true;run();requestAnimationFrame(tick);requestAnimationFrame(ftTick);
-</script></body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Latency Lab – Page Load Simulator</title>
+    <meta
+      name="description"
+      content="Simulate how a website, its API data, an SSH terminal and file transfers behave at different latencies. Test your own site before choosing a VPS location."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⏱️%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/config.js"></script>
+    <script defer src="js/controls.js"></script>
+    <script defer src="js/simulator.js"></script>
+    <script defer src="js/page-load-ui.js"></script>
+    <script defer src="js/terminal.js"></script>
+    <script defer src="js/file-transfer.js"></script>
+    <script defer src="js/site-test.js"></script>
+    <script defer src="js/main.js"></script>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1>Latency Lab</h1>
+          <p>
+            Pick a server location’s latency, tune the network and your page, then watch how the site and its
+            API data actually load.
+          </p>
+        </div>
+        <button class="btn" id="theme">Toggle theme</button>
+      </header>
+      <div class="app">
+        <aside class="pn ctl" id="ctl"><h2>Controls</h2></aside>
+        <section class="res">
+          <div class="pn" id="site">
+            <h2>Test your own website</h2>
+            <div class="ur">
+              <input
+                id="url"
+                type="url"
+                placeholder="https://your-site.com"
+                aria-label="Website URL"
+                autocomplete="off"
+              /><button class="btn p" id="probe">Run live test</button>
+            </div>
+            <div class="stl">
+              <span class="dot" id="dot"></span><b id="stt">Idle</b
+              ><span class="note" id="stm"
+                >Paste a link and run the test, or use the curl method for full data.</span
+              >
+            </div>
+            <div class="mets" id="smets"></div>
+            <div class="samp" id="ssamp"></div>
+            <details>
+              <summary>Full data with curl (works for any site)</summary>
+              <p class="note">
+                Browsers hide most details of other sites. Run this in a terminal (macOS, Linux, WSL or Git
+                Bash) and paste the full output below.
+              </p>
+              <textarea class="ta" id="ccmd" readonly rows="5" aria-label="curl command"></textarea
+              ><button class="btn" id="ccopy">Copy command</button>
+              <textarea
+                class="ta"
+                id="cpaste"
+                rows="6"
+                placeholder="Paste the curl output here"
+                aria-label="curl output"
+              ></textarea
+              ><button class="btn p" id="canal">Analyze output</button>
+            </details>
+            <div class="g2">
+              <div>
+                <h3>Connection details</h3>
+                <table class="kv" id="sdet"></table>
+              </div>
+              <div>
+                <h3>Response headers</h3>
+                <table class="kv" id="shdr"></table>
+              </div>
+            </div>
+            <h3>Findings</h3>
+            <ul id="sfind"></ul>
+            <h3>Projected time to first byte by server location</h3>
+            <div id="sproj"></div>
+            <div class="bar">
+              <button class="btn" id="ssim">Use these numbers in the simulator</button
+              ><button class="btn" id="sprev">Preview site with my latency</button>
+            </div>
+            <div id="sfrm"></div>
+            <p class="note">
+              The live test measures real response times from your browser to your site and nothing is sent
+              anywhere else. It cannot run if this page is opened from a host that blocks calls to other
+              sites, or if you open an https page and test an http:// link. Opened locally or from GitHub
+              Pages it works. The curl method works everywhere.
+            </p>
+          </div>
+          <div class="mets" id="mets"></div>
+          <div class="pn">
+            <h2>Live preview</h2>
+            <div class="fr">
+              <div class="fb">
+                <u></u><u></u><u></u><span class="url">https://your-server.example</span>
+                <div class="prog" id="prog"></div>
+              </div>
+              <div class="vp"><div class="pg" id="pg"></div></div>
+            </div>
+            <div class="st" id="stat">Ready</div>
+            <div class="bar">
+              <button class="btn p" id="play">Replay</button
+              ><select id="spd" aria-label="Playback speed">
+                <option value=".25">0.25×</option>
+                <option value=".5">0.5×</option>
+                <option value="1" selected>1× real time</option>
+                <option value="2">2×</option>
+                <option value="5">5×</option></select
+              ><input type="range" id="sc" min="0" max="1000" value="0" aria-label="Timeline" /><span
+                class="tm"
+                id="tm"
+                >0 ms</span
+              ><button class="btn" id="pin">Pin as baseline</button>
+            </div>
+          </div>
+          <div class="pn">
+            <h2>Request waterfall</h2>
+            <div class="wfx"><div class="wfi" id="wf"></div></div>
+            <div class="lg">
+              <span style="--c: var(--dns)">DNS</span><span style="--c: var(--tcp)">TCP / QUIC connect</span
+              ><span style="--c: var(--tls)">TLS</span
+              ><span style="--c: var(--wait)">Waiting (network + server)</span
+              ><span style="--c: var(--dl)">Download</span>
+            </div>
+          </div>
+          <div class="pn">
+            <h2>Terminal over SSH: typing lag and command time</h2>
+            <div class="tbar">
+              <select id="tmode" aria-label="Terminal type">
+                <option value="ssh">SSH (every key goes to the server first)</option>
+                <option value="mosh">Mosh (keys appear instantly)</option></select
+              ><span id="tinfo"></span>
+            </div>
+            <div class="term" id="term" tabindex="-1">
+              <div id="tout"></div>
+              <div class="tl">
+                <span class="pr">deploy@vps:~$ </span><span id="tin"></span><i class="cur"></i>
+              </div>
+              <input
+                id="tkey"
+                aria-label="Terminal input"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+              />
+            </div>
+            <div class="chips" id="tchips" style="margin-top: 10px"></div>
+            <p class="note" style="margin: 0">
+              Click the terminal and type, or press a command button. Characters appear only after the round
+              trip, and each command reports how long its output took. <span id="tlag"></span>
+            </p>
+          </div>
+          <div class="pn">
+            <h2>Downloading and uploading files</h2>
+            <div class="ftc">
+              <label
+                >File size<span class="nv"
+                  ><input type="number" id="fsz" value="100" min="1" /><select id="fun">
+                    <option value="1048576">MB</option>
+                    <option value="1073741824">GB</option>
+                  </select></span
+                ></label
+              >
+              <label
+                >Direction<select id="fdir">
+                  <option value="down">Download from server</option>
+                  <option value="up">Upload to server</option>
+                </select></label
+              >
+              <label
+                >Method<select id="fmeth">
+                  <option value="https">HTTPS download or upload (1 stream)</option>
+                  <option value="h3">HTTP/3 (QUIC)</option>
+                  <option value="sftp">SFTP or SCP (1 SSH stream)</option>
+                  <option value="par">Parallel streams (rsync, aria2, split upload)</option>
+                </select></label
+              >
+              <label>Parallel streams<input type="number" id="fn" value="4" min="1" max="32" /></label>
+            </div>
+            <div class="mets" id="fmets"></div>
+            <div class="bar">
+              <button class="btn p" id="fgo">Start transfer</button>
+              <div class="pbar"><i id="fpb"></i></div>
+              <span class="tm" id="ftm" style="min-width: 240px"></span>
+            </div>
+            <svg
+              id="fch"
+              viewBox="0 0 600 150"
+              preserveAspectRatio="none"
+              role="img"
+              aria-label="Transfer speed over time"
+            ></svg>
+            <div class="ax2">
+              <span>Speed over time: connection setup, ramp-up, then steady speed</span
+              ><span id="fmax"></span>
+            </div>
+            <p class="note" id="fnote"></p>
+            <div id="fcmp"></div>
+          </div>
+          <div class="pn">
+            <h2>Compare server locations with your settings</h2>
+            <div id="cmp"></div>
+            <p class="note">
+              Blue bar: largest paint. Green bar: fully loaded. Click a row to use that latency. Region
+              latencies are rough typical values and depend on your visitors’ ISPs.
+            </p>
+          </div>
+          <div class="pn">
+            <h2>What would help most</h2>
+            <ul id="tips"></ul>
+          </div>
+          <div class="pn">
+            <h2>Measure a real server</h2>
+            <p class="note" style="margin: 0">
+              Most VPS providers offer a test IP or looking-glass page. Ping it, then run this against a trial
+              server and copy the numbers into the sliders.
+            </p>
+            <pre><code>ping -c 10 YOUR_SERVER_IP
+curl -o /dev/null -s -w "dns:%{time_namelookup} connect:%{time_connect} tls:%{time_appconnect} ttfb:%{time_starttransfer} total:%{time_total}\n" https://YOUR_SITE</code></pre>
+          </div>
+        </section>
+      </div>
+      <p class="note">
+        Educational model: DNS, TCP and TLS 1.3 each cost one round trip (TLS 1.2 costs two; HTTP/3 combines
+        transport and crypto into one). Transfers include TCP slow start and a loss penalty. Real results
+        vary, so use this to compare options rather than as an exact prediction.
+      </p>
+    </div>
+  </body>
+</html>
